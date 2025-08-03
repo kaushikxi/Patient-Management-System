@@ -1,0 +1,49 @@
+server:
+  port: 4004 # api gateway is going to run on port 4004
+
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service-route
+          uri: http://auth-service:4005 # this is where auth-service is running inside the docker container, and docker will handle resolving the dns to the actual container using the name of the container
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1 # it's going to remove everything before the second /
+        #REST- http://localhost:4004/auth/login
+        #API- http://auth-service:4005/login
+
+
+        # Route for /api/patients/** to patient-service
+        - id: patient-service-route # Under routes, we're going to add all the rules to specify how to route to patient service microservice
+          uri: http://patient-service:4000 # internal address of patient-service running inside docket setup and port 4000 is what we specify when the internal address as being anytime we run the docker container
+          predicates: # expects this request from frontend to apply the rules to forward the route to patient-service
+            - Path=/api/patients/** # ** is wildcard where every request beginning with /api/patients will be forwarded to patient-service
+          filters: # A way to rewrite the predicate before it forwards the request to the URI
+            - StripPrefix=1
+            - JwtValidation # Spring is going to look for a class prefixed with GatewayFilterFactory and makes sure the token is validated
+
+          ## REST Client -> http://localhost:4004/api/patients
+          ## API Gateway -> http://patient-service:4000/patients ; api is removed from api/patients because of the filter
+          ## PATIENT SERVICE(SPRINGBOOT APP) -> /patients ->  Get Array
+
+        #Route for /api/docs/patients to patient-service /v3/api-docs
+        - id: api-docs-patient-route
+          uri: http://patient-service:4000
+          predicates:
+            - Path=/api-docs/patients
+          filters:
+            - RewritePath=/api-docs/patients,/v3/api-docs
+
+        #REST CLIENT -> http://localhost:4004/api-docs/patients
+        #API GATEWAY -> http://patient-service:4000/v3/api-docs
+
+        - id: api-docs-auth-route
+          uri: http://auth-service:4005
+          predicates:
+            - Path=/api-docs/auth
+          filters:
+            - RewritePath=/api-docs/auth, /v3/api-docs
+

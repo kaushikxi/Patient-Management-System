@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option java_multiple_files = true; // splits our service request and response into different files
+option java_package = "billing"; // ensures code generations puts all our code into a package called billing
+
+service BillingService{
+  rpc CreateBillingAccount (BillingRequest) returns (BillingResponse);// creates an rpc method that takes in BillingRequest from patient service and returns BillingResponse
+}
+
+message BillingRequest {
+  string patientId = 1; // this is used in grpc and protobuf code to serialize and deserialize the variable; this number has to be unique
+  string name = 2;
+  string email = 3;
+}
+
+message BillingResponse {
+  string accountId = 1;
+  string status = 2;
+}
